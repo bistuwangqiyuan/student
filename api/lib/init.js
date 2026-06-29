@@ -1,26 +1,37 @@
-const fs = require('fs');
-const path = require('path');
-const { neon, Pool } = require('@neondatabase/serverless');
+const { neon } = require('@neondatabase/serverless');
+const { getDatabaseUrl } = require('./db');
 const { hashPassword } = require('./auth');
 
-async function runSchema() {
-  const schemaPath = path.join(__dirname, '../../sql/schema.sql');
-  const schema = fs.readFileSync(schemaPath, 'utf-8');
-  const statements = schema
-    .split(';')
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0);
+async function runSchema(sql) {
+  await sql`
+    CREATE TABLE IF NOT EXISTS admins (
+      id SERIAL PRIMARY KEY,
+      username VARCHAR(50) UNIQUE NOT NULL,
+      password_hash VARCHAR(255) NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
 
-  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-  const client = await pool.connect();
-  try {
-    for (const statement of statements) {
-      await client.query(statement);
-    }
-  } finally {
-    client.release();
-    await pool.end();
-  }
+  await sql`
+    CREATE TABLE IF NOT EXISTS students (
+      id SERIAL PRIMARY KEY,
+      username VARCHAR(50) UNIQUE NOT NULL,
+      password_hash VARCHAR(255) NOT NULL,
+      student_no VARCHAR(20) UNIQUE,
+      name VARCHAR(50),
+      gender VARCHAR(10),
+      age INTEGER,
+      class_name VARCHAR(50),
+      major VARCHAR(100),
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_students_keyword
+    ON students (student_no, name, class_name, major)
+  `;
 }
 
 async function seedData(sql) {
@@ -70,11 +81,12 @@ async function seedData(sql) {
 }
 
 async function initializeDatabase() {
-  if (!process.env.DATABASE_URL) {
-    throw new Error('DATABASE_URL 环境变量未配置');
+  const url = getDatabaseUrl();
+  if (!url) {
+    throw new Error('数据库连接未配置，请设置 DATABASE_URL 或 POSTGRES_URL');
   }
-  const sql = neon(process.env.DATABASE_URL);
-  await runSchema();
+  const sql = neon(url);
+  await runSchema(sql);
   await seedData(sql);
   return { message: '数据库初始化完成' };
 }

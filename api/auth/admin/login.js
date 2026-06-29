@@ -37,6 +37,13 @@ module.exports = async function handler(req, res) {
     return success(res, { token, username: admin.username, role: 'admin' });
   } catch (err) {
     console.error('Admin login error:', err);
+    const msg = err.message || '';
+    if (msg.includes('does not exist') || msg.includes('relation')) {
+      return error(res, '数据库未初始化，请先访问 /api/init-db 进行初始化', 503);
+    }
+    if (msg.includes('未配置') || msg.includes('DATABASE_URL') || msg.includes('POSTGRES_URL')) {
+      return error(res, '数据库连接未配置，请检查 Vercel 环境变量', 503);
+    }
     return error(res, '服务器错误', 500);
   }
 };

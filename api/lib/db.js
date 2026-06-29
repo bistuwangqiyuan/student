@@ -1,10 +1,20 @@
 const { neon } = require('@neondatabase/serverless');
 
-function getSql() {
-  if (!process.env.DATABASE_URL) {
-    throw new Error('DATABASE_URL 环境变量未配置');
-  }
-  return neon(process.env.DATABASE_URL);
+function getDatabaseUrl() {
+  return (
+    process.env.DATABASE_URL ||
+    process.env.POSTGRES_URL ||
+    process.env.POSTGRES_URL_NON_POOLING ||
+    process.env.POSTGRES_PRISMA_URL
+  );
 }
 
-module.exports = { getSql };
+function getSql() {
+  const url = getDatabaseUrl();
+  if (!url) {
+    throw new Error('数据库连接未配置，请设置 DATABASE_URL 或 POSTGRES_URL');
+  }
+  return neon(url);
+}
+
+module.exports = { getDatabaseUrl, getSql };

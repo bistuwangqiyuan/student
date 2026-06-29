@@ -1,8 +1,9 @@
 const { initializeDatabase } = require('../api/lib/init');
+const { getDatabaseUrl } = require('../api/lib/db');
 
 async function main() {
-  if (!process.env.DATABASE_URL) {
-    console.error('错误: 请设置 DATABASE_URL 环境变量');
+  if (!getDatabaseUrl()) {
+    console.error('错误: 请设置 DATABASE_URL 或 POSTGRES_URL 环境变量');
     process.exit(1);
   }
 
