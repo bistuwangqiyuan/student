@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>学生注册 - 学生信息管理系统</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <div class="page-center">
+    <div class="card">
+      <div class="logo">
+        <div class="logo-icon">📝</div>
+        <h1>学生注册</h1>
+        <p>创建您的学生账号</p>
+      </div>
+
+      <div id="alertBox" class="alert hidden"></div>
+
+      <form id="registerForm">
+        <div class="form-group">
+          <label for="username">用户名</label>
+          <input type="text" id="username" name="username" placeholder="3-50 个字符" required minlength="3" maxlength="50" autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label for="password">密码</label>
+          <input type="password" id="password" name="password" placeholder="至少 6 位" required minlength="6" autocomplete="new-password">
+        </div>
+        <div class="form-group">
+          <label for="confirmPassword">确认密码</label>
+          <input type="password" id="confirmPassword" name="confirmPassword" placeholder="再次输入密码" required minlength="6" autocomplete="new-password">
+        </div>
+        <button type="submit" class="btn btn-primary" id="submitBtn">注册</button>
+      </form>
+
+      <p class="footer-link">
+        已有账号？<a href="/index.html">返回登录</a>
+      </p>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script>
+    function showAlert(msg, type) {
+      const box = document.getElementById('alertBox');
+      box.textContent = msg;
+      box.className = 'alert alert-' + type;
+    }
+
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('submitBtn');
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+      const confirmPassword = document.getElementById('confirmPassword').value;
+
+      if (password !== confirmPassword) {
+        showAlert('两次输入的密码不一致', 'error');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = '注册中...';
+      document.getElementById('alertBox').classList.add('hidden');
+
+      try {
+        await api.post('/api/auth/student/register', { username, password }, false);
+        window.location.href = '/index.html?registered=1';
+      } catch (err) {
+        showAlert(err.message || '注册失败', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '注册';
+      }
+    });
+  </script>
+</body>
+</html>

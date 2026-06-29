@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>登录 - 学生信息管理系统</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <div class="page-center">
+    <div class="card">
+      <div class="logo">
+        <div class="logo-icon">🎓</div>
+        <h1>学生信息管理系统</h1>
+        <p>Student Information Management System</p>
+      </div>
+
+      <div id="alertBox" class="alert hidden"></div>
+
+      <div class="tabs">
+        <button type="button" class="tab active" data-tab="admin">管理员登录</button>
+        <button type="button" class="tab" data-tab="student">学生登录</button>
+      </div>
+
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="username">用户名</label>
+          <input type="text" id="username" name="username" placeholder="请输入用户名" required autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label for="password">密码</label>
+          <input type="password" id="password" name="password" placeholder="请输入密码" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn btn-primary" id="submitBtn">登录</button>
+      </form>
+
+      <p class="footer-link" id="registerLink">
+        还没有账号？<a href="/register.html">立即注册</a>
+      </p>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script>
+    let currentTab = 'admin';
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('registered') === '1') {
+      showAlert('注册成功，请登录', 'success');
+      switchTab('student');
+    }
+
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+    });
+
+    function switchTab(tab) {
+      currentTab = tab;
+      document.querySelectorAll('.tab').forEach(t => {
+        t.classList.toggle('active', t.dataset.tab === tab);
+      });
+      document.getElementById('registerLink').classList.toggle('hidden', tab === 'admin');
+    }
+
+    function showAlert(msg, type) {
+      const box = document.getElementById('alertBox');
+      box.textContent = msg;
+      box.className = 'alert alert-' + type;
+    }
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('submitBtn');
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+
+      btn.disabled = true;
+      btn.textContent = '登录中...';
+      document.getElementById('alertBox').classList.add('hidden');
+
+      try {
+        const endpoint = currentTab === 'admin'
+          ? '/api/auth/admin/login'
+          : '/api/auth/student/login';
+
+        const res = await api.post(endpoint, { username, password }, false);
+        Auth.save(res.data);
+        window.location.href = res.data.role === 'admin' ? '/admin.html' : '/student.html';
+      } catch (err) {
+        showAlert(err.message || '登录失败', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '登录';
+      }
+    });
+
+    if (Auth.isLoggedIn()) {
+      const user = Auth.getUser();
+      window.location.href = user.role === 'admin' ? '/admin.html' : '/student.html';
+    }
+  </script>
+</body>
+</html>
